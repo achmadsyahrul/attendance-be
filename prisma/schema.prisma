@@ -43,6 +43,8 @@ model Attendance {
   userId     String           @map("user_id")
   date       DateTime
   status     AttendanceStatus
+  latitude   Float
+  longitude  Float
   location   String?
   ip         String?
   photoUrl   String?          @map("photo_url")

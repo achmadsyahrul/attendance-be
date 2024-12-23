@@ -6,8 +6,8 @@ import { parseBearer } from '../utils/parseBearer'
 
 declare module 'express-serve-static-core' {
   interface Request {
-    userId?: string
-    token?: string
+    userId: string
+    token: string
   }
 }
 

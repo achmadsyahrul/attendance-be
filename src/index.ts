@@ -9,6 +9,8 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/api/user', routes.userRoutes)
 app.use('/api/auth', routes.authRoutes)
+app.use('/api/attendance', routes.attendaneRoutes)
+app.use('/storage', routes.storageRoutes)
 
 // Default route for unknown endpoints
 app.use((req: Request, res: Response, next: NextFunction) => {
