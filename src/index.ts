@@ -1,3 +1,4 @@
+import cors from 'cors'
 import express, { Application, NextFunction, Request, Response } from 'express'
 import { config } from './config'
 import routes from './routes'
@@ -6,6 +7,7 @@ const app: Application = express()
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+app.use(cors())
 
 app.use('/api/user', routes.userRoutes)
 app.use('/api/auth', routes.authRoutes)
