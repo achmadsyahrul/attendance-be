@@ -19,6 +19,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   try {
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { profile: true },
     })
 
     if (!user) {
@@ -36,7 +37,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const token = jwt.sign({ userId: user.id, email: user.email }, config.app.jwtSecret, { expiresIn: '1h' })
     await redisClient.set(token, user.id.toString(), { EX: 3600 })
 
-    res.status(200).json({ message: 'Login successful', token })
+    const { password: except, ...data } = user
+    res.status(200).json({ message: 'Login successful', user: data, token })
   } catch (error) {
     console.error('Error logging in:', error)
     res.status(500).json({ message: 'Internal server error' })

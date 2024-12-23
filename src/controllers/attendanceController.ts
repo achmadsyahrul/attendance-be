@@ -40,7 +40,25 @@ export const markAttendance = [
       return
     }
 
+    const todayStart = moment().startOf('day').toDate()
+    const todayEnd = moment().endOf('day').toDate()
+
     try {
+      const existingAttendance = await prisma.attendance.findFirst({
+        where: {
+          userId,
+          date: {
+            gte: todayStart,
+            lte: todayEnd,
+          },
+        },
+      })
+
+      if (existingAttendance) {
+        res.status(400).json({ message: 'Attendance already marked for today' })
+        return
+      }
+
       const attendance = await prisma.attendance.create({
         data: {
           userId,
@@ -71,31 +89,57 @@ export const reportAttendance = async (req: Request, res: Response): Promise<voi
     const startDate = req.query.startDate as string
     const endDate = req.query.endDate as string
     const userId = req.userId
+    const limit = parseInt(req.query.limit as string) || 10
+    const offset = parseInt(req.query.offset as string) || 0
 
     if (!userId || !startDate || !endDate || !timezone) {
       res.status(400).json({ message: 'Missing required query parameters' })
       return
     }
 
-    const start = moment(startDate).startOf('day').toDate()
-    const end = moment(endDate).endOf('day').toDate()
+    const start = moment(startDate, 'YYYY-MM-DD').startOf('day').toDate()
+    const end = moment(endDate, 'YYYY-MM-DD').endOf('day').toDate()
 
-    const attendanceData = await prisma.attendance.findMany({
-      where: {
-        userId,
-        date: {
-          gte: start,
-          lte: end,
+    const [attendanceData, total] = await Promise.all([
+      prisma.attendance.findMany({
+        where: {
+          userId,
+          date: {
+            gte: start,
+            lte: end,
+          },
         },
-      },
-    })
+        orderBy: {
+          date: 'desc',
+        },
+        take: limit,
+        skip: offset,
+      }),
+      prisma.attendance.count({
+        where: {
+          userId,
+          date: {
+            gte: start,
+            lte: end,
+          },
+        },
+      }),
+    ])
 
     const attendanceWithTimezone = attendanceData.map((attendance) => {
       const localTimestamp = moment(attendance.date).tz(timezone).format('YYYY-MM-DD HH:mm:ss')
       return { ...attendance, timestamp: localTimestamp }
     })
 
-    res.json({ attendance: attendanceWithTimezone })
+    res.json({
+      attendance: attendanceWithTimezone,
+      pagination: {
+        dataPerPage: limit,
+        totalData: total,
+        page: Math.floor(offset / limit) + 1,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
   } catch (error) {
     console.error(error)
     res.status(500).json({ message: 'Error retrieving attendance data' })
