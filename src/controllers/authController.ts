@@ -4,7 +4,6 @@ import { Request, Response } from 'express'
 import { body, validationResult } from 'express-validator'
 import jwt from 'jsonwebtoken'
 import { config } from '../config'
-import redisClient from '../services/redisClient'
 
 const prisma = new PrismaClient()
 
@@ -35,7 +34,6 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     }
 
     const token = jwt.sign({ userId: user.id, email: user.email }, config.app.jwtSecret, { expiresIn: '1h' })
-    await redisClient.set(token, user.id.toString(), { EX: 3600 })
 
     const { password: except, ...data } = user
     res.status(200).json({ message: 'Login successful', user: data, token })
@@ -100,8 +98,5 @@ export const register = [
 ]
 
 export const logout = async (req: Request, res: Response) => {
-  if (req.token) {
-    await redisClient.del(req.token)
-  }
   res.status(200).json({ message: 'Logout successful' })
 }
